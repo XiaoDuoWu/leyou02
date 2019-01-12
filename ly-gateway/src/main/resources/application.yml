@@ -1,0 +1,45 @@
+server:
+  port: 10010
+spring:
+  application:
+    name: api-gateway
+eureka:
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:10086/eureka
+zuul:
+  prefix: /api # 添加路由前缀
+  routes:
+    item-service: /item/** # 将商品微服务映射到/item/**
+    upload-service: /upload/** # 将上传微服务映射到/upload/**
+    search-service: /search/** # 将上传微服务映射到/search/**
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 5000 # 熔断超时时长：5000ms
+ribbon:
+  ConnectTimeout: 1000 # ribbon链接超时时长
+  ReadTimeout: 3500 # ribbon读取超时时长
+  MaxAutoRetries: 0  # 当前服务重试次数
+  MaxAutoRetriesNextServer: 0 # 切换服务重试次数
+
+ly:
+  cors:
+    allowedOrigins:
+      - http://manage.leyou.com
+    allowCredentials: true
+    allowedMethods:
+      - GET
+      - POST
+      - DELETE
+      - PUT
+      - OPTIONS
+      - HEAD
+      - PATCH
+    maxAge: 3600  #最大有效期，有效期内不用再发请求
+    filterPath: /**  #过滤路径
+    allowedHeaders: #允许的头
+      - "*"
