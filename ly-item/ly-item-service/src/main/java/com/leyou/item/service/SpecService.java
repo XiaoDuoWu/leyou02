@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class SpecService {
@@ -81,7 +83,7 @@ public class SpecService {
         SpecParam param = new SpecParam();
         param.setGroupId(gid);
         specParamMapper.delete(param);
-        if (i != 1 ) {
+        if (i != 1) {
             throw new LyException(ExceptionEnum.SERVER_ERROR);
         }
     }
@@ -114,5 +116,19 @@ public class SpecService {
         if (i != 1) {
             throw new LyException(ExceptionEnum.SPEC_PARAM_EDIT_ERROR);
         }
+    }
+
+    //
+    public List<SpecGroup> querySpecs(Long cid) {
+//      查询出 规格组
+        List<SpecGroup> specGroups = queryGroupByCid(cid);
+
+        List<SpecParam> specParams = queryParamByGid(null, cid, null);
+//        把specParams转换成Map
+        Map<Long, List<SpecParam>> map = specParams.stream().collect(Collectors.groupingBy(SpecParam::getGroupId));
+        for (SpecGroup specGroup : specGroups) {
+            specGroup.setParams(map.get(specGroup.getId()));
+        }
+        return specGroups;
     }
 }

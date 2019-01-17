@@ -62,7 +62,7 @@ public class CategoryClientTest {
         int size = 0;
         do {
             // 查询分页数据
-            PageResult<Spu> result = this.goodsClient.querySpuByPage(page, rows, null, null);
+            PageResult<Spu> result = this.goodsClient.querySpuByPage(page, rows, null, true);
             List<Spu> spus = result.getItems();
             size = spus.size();
             // 创建Goods集合

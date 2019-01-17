@@ -16,6 +16,7 @@ import java.util.List;
 public interface GoodsClient {
     /**
      * 调用接口，查spu
+     *
      * @param page
      * @param rows
      * @param key
@@ -33,6 +34,7 @@ public interface GoodsClient {
 
     /**
      * 调用接口，根据spu_id查spuDetail
+     *
      * @param spu_id
      * @return
      */
@@ -41,9 +43,18 @@ public interface GoodsClient {
 
     /**
      * 调用接口，根据spu_id查sku
+     *
      * @param id
      * @return
      */
     @GetMapping("sku/list")
     List<Sku> querySkuBySpuId(@RequestParam("id") Long id);
+
+    /**
+     * 根据spuId查询spu
+     * @param id
+     * @return
+     */
+    @GetMapping("spu/{id}")
+    Spu querySpuId(@PathVariable("id") Long id);
 }

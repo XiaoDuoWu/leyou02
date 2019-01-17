@@ -14,7 +14,6 @@
     <packaging>pom</packaging>
     <modules>
         <module>ly-item-pojo</module>
-        <module>ly-item-pojo</module>
         <module>ly-item-service</module>
         <module>ly-item-interface</module>
     </modules>

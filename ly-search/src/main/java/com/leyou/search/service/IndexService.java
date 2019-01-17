@@ -1,16 +1,34 @@
 package com.leyou.search.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.leyou.common.enums.ExceptionEnum;
+import com.leyou.common.exceptions.LyException;
 import com.leyou.common.utils.JsonUtils;
 import com.leyou.common.utils.NumberUtils;
+import com.leyou.common.vo.PageResult;
+
 import com.leyou.item.client.BrandClient;
 import com.leyou.item.client.CategoryClient;
 import com.leyou.item.client.GoodsClient;
 import com.leyou.item.client.SpecClient;
 import com.leyou.item.pojo.*;
 import com.leyou.search.pojo.Goods;
-import org.apache.commons.lang.StringUtils;
+
+import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.terms.LongTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.StringTerms;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
+import org.springframework.data.elasticsearch.core.query.FetchSourceFilter;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -18,86 +36,100 @@ import java.util.stream.Collectors;
 
 @Service
 public class IndexService {
-    @Autowired
-    private CategoryClient categoryClient;
+
     @Autowired
     private BrandClient brandClient;
+    @Autowired
+    private CategoryClient categoryClient;
     @Autowired
     private GoodsClient goodsClient;
     @Autowired
     private SpecClient specClient;
 
-    public Goods buildGoods(Spu spu) throws Exception {
-//    查询分类
-        String categoryNames = categoryClient.queryListByIds(Arrays.asList(spu.getCid1(), spu.getCid2(), spu.getCid3())).stream().map(Category::getName).collect(Collectors.joining(""));
-//    查询品牌
+    @Autowired
+    private ElasticsearchTemplate template;
+
+    /**
+     * 把一个spu转为一个Goods对象
+     *
+     * @param spu
+     * @return
+     */
+    public Goods buildGoods(Spu spu) {
+        // 1 用来全文检索的字段, 包含标题、分类、品牌、...等
+        // 1.1 查询分类
+        String categoryNames = categoryClient.queryListByIds(
+                Arrays.asList(spu.getCid1(), spu.getCid2(), spu.getCid3()))
+                .stream().map(Category::getName).collect(Collectors.joining());
+        // 1.2 查询品牌
         Brand brand = brandClient.queryBrandById(spu.getBrandId());
-//    查询sku
-        List<Sku> skuList = goodsClient.querySkuBySpuId(spu.getId());
-//    查询商品详情
-        SpuDetail spuDetail = goodsClient.querySpuDetailBySpuId(spu.getId());
-//    搜索字段all
         String all = spu.getTitle() + categoryNames + brand.getName();
-//    创建集合 处理sku
+
+        // 2 spu下的所有sku的集合的json格式
+        // 2.1 查询sku
+        List<Sku> skuList = goodsClient.querySkuBySpuId(spu.getId());
+        // 2.2 取出需要的字段
         List<Map<String, Object>> skus = new ArrayList<>();
-//    价格集合
         for (Sku sku : skuList) {
             Map<String, Object> map = new HashMap<>();
             map.put("id", sku.getId());
-            map.put("title", sku.getTitle());
             map.put("price", sku.getPrice());
             map.put("image", StringUtils.substringBefore(sku.getImages(), ","));
-//        把sks的处理成map的属性添加进map中
+            map.put("title", sku.getTitle());
             skus.add(map);
         }
-        // 查询规格参数
-        List<SpecParam> params = specClient.queryParamByGid(null, spu.getCid3(), true);
+        // 3 spu下的所有sku的价格
         Set<Long> price = skuList.stream().map(Sku::getPrice).collect(Collectors.toSet());
-//获取通用规格参数
-        Map<Long, String> genericSpec = JsonUtils.toMap(spuDetail.getGenericSpec(), Long.class, String.class);
-        // 获取特有规格参数
-        Map<Long, List<String>> specialSpec = JsonUtils
-                .nativeRead(spuDetail.getSpecialSpec(), new TypeReference<Map<Long, List<String>>>() {
-                });
-        // 规格参数,key是规格参数的名字,值是规格参数的值
+
+        // 4 spu的可搜索的规格参数的键值对
         Map<String, Object> specs = new HashMap<>();
-        for (SpecParam param : params) {
-            // 规格名称
-            String key = param.getName();
-            Object value = "";
-            // 判断是否是通用规格
-            if (param.getGeneric()) {
-                value = genericSpec.get(param.getId());
-                // 判断是否是数值类型
-                if (param.getNumeric()) {
-                    // 处理成段
-                    value = chooseSegment(value.toString(), param);
-                }
+
+        // 4.1 查询规格参数key
+        List<SpecParam> specParams = specClient.queryParamByGid(null, spu.getCid3(), true);
+
+        // 4.2 查询规格参数值，在spuDetail中
+        SpuDetail spuDetail = goodsClient.querySpuDetailBySpuId(spu.getId());
+        // 4.2.1 取出通用规格参数值
+        Map<Long, Object> genericSpec = JsonUtils.toMap(spuDetail.getGenericSpec(), Long.class, Object.class);
+        // 4.2.2 取出特有规格参数值
+        Map<Long, List<String>> specialSpec = JsonUtils.nativeRead(spuDetail.getSpecialSpec(), new TypeReference<Map<Long, List<String>>>() {
+        });
+
+        // 4.3 填充map
+        for (SpecParam specParam : specParams) {
+            // 规格参数名称，作为key
+            String key = specParam.getName();
+            Object value = null;
+            // 判断是否是通用属性
+            if (specParam.getGeneric()) {
+                // 通用属性
+                value = genericSpec.get(specParam.getId());
             } else {
-                value = specialSpec.get(param.getId());
+                // 特有属性
+                value = specialSpec.get(specParam.getId());
             }
-            value = value == null ? "其他" : value;
-            // 存入map
+            // 处理value，判断是不是数值，如果是，需要分段处理
+            if (specParam.getNumeric()) {
+                value = chooseSegment(value, specParam);
+            }
+
             specs.put(key, value);
         }
 
-        // 构建goods对象
         Goods goods = new Goods();
-        goods.setBrandId(spu.getBrandId());
-        goods.setCid3(spu.getCid3());
+        // 拷贝属性名一致的属性
+        BeanUtils.copyProperties(spu, goods);
+        // 其它属性，自己填写
         goods.setCreateTime(spu.getCreateTime().getTime());
-        goods.setId(spu.getId());
-        goods.setAll(all);// 搜索字段,包含标题,分类,品牌,规格等
-        goods.setPrice(price);// 所有sku的价格集合
-        goods.setSkus(JsonUtils.toString(skus));// 所有sku的集合的json格式
-        goods.setSpecs(specs);// 所有的可搜索的规格参数
-        goods.setSubTitle(spu.getSubTitle());
+        goods.setAll(all);// 用来全文检索的字段
+        goods.setSkus(JsonUtils.toString(skus));// spu下的所有sku的集合的json格式
+        goods.setPrice(price);// spu下的所有sku的价格
+        goods.setSpecs(specs);// spu的可搜索的规格参数的键值对
         return goods;
-
     }
 
     private String chooseSegment(Object value, SpecParam p) {
-        if (value == null) {
+        if (value == null || value.toString().equals("")) {
             return "其它";
         }
         double val = NumberUtils.toDouble(value.toString());
@@ -125,5 +157,4 @@ public class IndexService {
         }
         return result;
     }
-
 }

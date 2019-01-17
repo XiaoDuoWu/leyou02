@@ -253,4 +253,17 @@ public class GoodsService {
         //新增sku和stock---之前做过相同的业务，方法抽取出来调用即可.
         saveSkuAndStock(spu);
     }
+//根据spuId 查询spu
+    public Spu querySpuById(Long id) {
+        // 查询spu
+        Spu spu = spuMapper.selectByPrimaryKey(id);
+        if (spu == null) {
+            throw new LyException(ExceptionEnum.GOODS_NOT_FOUND);
+        }
+        // 查询spuDetail
+        spu.setSpuDetail(queryBySpuId(id));
+        // 查询skus
+        spu.setSkus(querySkuBySpuId(id));
+        return spu;
+    }
 }

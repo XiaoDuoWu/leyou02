@@ -1,9 +1,11 @@
 package com.leyou.item.client;
 
 
+import com.leyou.item.pojo.SpecGroup;
 import com.leyou.item.pojo.SpecParam;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
@@ -24,4 +26,14 @@ public interface SpecClient {
             @RequestParam(name = "cid", required = false) Long cid,
             @RequestParam(name = "searching", required = false) Boolean searching
     );
+
+    /**
+     * 根据分类id查询规格组及规格参数
+     *
+     * @param cid
+     * @return
+     */
+    @GetMapping("list/{cid}")
+    List<SpecGroup> querySpecs(@PathVariable("cid") Long cid);
+
 }

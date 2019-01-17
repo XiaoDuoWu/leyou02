@@ -40,4 +40,11 @@ public class CategoryController {
         return ResponseEntity.ok(categoryService.queryByIds(ids));
     }
 
+    @GetMapping("all/level")
+    public ResponseEntity<List<Category>> queryBreadsById(@RequestParam("id") Long id) {
+
+        List<Category> list = categoryService.queryBreadById(id);
+        return ResponseEntity.ok(list);
+    }
+
 }

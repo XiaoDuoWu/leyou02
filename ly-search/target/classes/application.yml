@@ -3,6 +3,8 @@ server:
 spring:
   application:
     name: search-service
+  jackson:
+      default-property-inclusion: non_null
   data:
     elasticsearch:
       cluster-name: elasticsearch
@@ -15,3 +17,4 @@ eureka:
   instance:
     prefer-ip-address: true
     ip-address: 127.0.0.1
+

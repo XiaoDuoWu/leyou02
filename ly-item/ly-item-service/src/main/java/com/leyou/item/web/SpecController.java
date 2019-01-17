@@ -76,4 +76,14 @@ public class SpecController {
         specService.updateParam(specParam);
         return ResponseEntity.status(204).build();
     }
+    /**
+     * 根据分类id查询规格组及规格参数
+     * @param cid
+     * @return
+     */
+    @GetMapping("list/{cid}")
+    public ResponseEntity<List<SpecGroup>> querySpecs(@PathVariable("cid") Long cid){
+        return ResponseEntity.ok(specService.querySpecs(cid));
+    }
+
 }

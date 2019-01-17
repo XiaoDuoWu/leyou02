@@ -1,5 +1,6 @@
 package com.leyou.item.mapper;
 
+import com.leyou.common.mapper.BaseMapper;
 import com.leyou.item.pojo.Brand;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
@@ -8,7 +9,7 @@ import tk.mybatis.mapper.common.Mapper;
 
 import java.util.List;
 
-public interface BrandMapper extends Mapper<Brand> {
+public interface BrandMapper extends BaseMapper<Brand> {
     @Insert("insert into tb_category_brand values(#{cid},#{bid})")
     int saveCategoryBrand(@Param("cid") Long cid,@Param("bid") Long bid);
 

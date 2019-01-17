@@ -81,4 +81,7 @@ public class BrandService {
         }
         return brands;
     }
+    public List<Brand> queryBrandByIds(List<Long> ids) {
+        return this.brandMapper.selectByIdList(ids);
+    }
 }
