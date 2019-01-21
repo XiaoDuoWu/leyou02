@@ -12,6 +12,8 @@ import com.leyou.item.client.SpecClient;
 import com.leyou.item.pojo.*;
 import com.leyou.pojo.SearchResult;
 import com.leyou.search.pojo.Goods;
+import com.leyou.search.repository.GoodsRepository;
+import com.leyou.search.service.IndexService;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -44,6 +46,12 @@ public class SearchService {
     private SpecClient specClient;
     @Autowired
     private ElasticsearchTemplate template;
+    @Autowired
+    private GoodsClient goodsClient;
+    @Autowired
+    private IndexService indexService;
+    @Autowired
+    private GoodsRepository repository;
 
 
     public PageResult<Goods> search(SearchRequest request) {
@@ -184,5 +192,21 @@ public class SearchService {
         map.put("options", categories);
         filterList.add(map);
         return idList;
+    }
+
+    //增加修改索引
+    public void insertOrUpdate(Long id) {
+//        查询Spu
+        Spu spu = goodsClient.querySpuId(id);
+//        把spu转为goods对象
+        Goods goods = indexService.buildGoods(spu);
+//        保存数据到索引库
+        repository.save(goods);
+
+    }
+
+    //删除索引
+    public void delete(Long id) {
+        repository.deleteById(id);
     }
 }

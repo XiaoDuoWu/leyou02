@@ -1,6 +1,19 @@
 server:
   port: 8081
 spring:
+  rabbitmq:
+      host: 192.168.96.129
+      username: leyou
+      password: 1234
+      virtual-host: /leyou
+      template:
+        retry:
+          enabled: true
+          initial-interval: 10000ms
+          max-interval: 30000ms
+          multiplier: 2
+        exchange: ly.item.exchange
+      publisher-confirms: true
   application:
     name: item-service
   datasource:

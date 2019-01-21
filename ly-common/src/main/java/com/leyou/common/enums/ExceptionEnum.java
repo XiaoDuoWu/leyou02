@@ -23,7 +23,8 @@ public enum ExceptionEnum {
     SPEC_PARAM_EDIT_ERROR(400, "规格组名编辑失败"),
     GOODS_INSERT_ERROR(400, "商品新增失败"),
     GOODS_EDIT_ERROR(400, "商品编辑失败"),
-    ;
+    BAD_REQUEST(400,"参数异常" ),
+    DATA_TYPE_ERROR(400,"数据类型错误" );
     //定义成员变量
     private String message;
     private int status;

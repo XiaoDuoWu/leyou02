@@ -10,7 +10,9 @@ import com.leyou.item.mapper.SpuDetailMapper;
 import com.leyou.item.mapper.SpuMapper;
 import com.leyou.item.mapper.StockMapper;
 import com.leyou.item.pojo.*;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class GoodsService {
     @Autowired
     private SpuMapper spuMapper;
@@ -34,6 +37,8 @@ public class GoodsService {
     private SkuMapper skuMapper;
     @Autowired
     private StockMapper stockMapper;
+    @Autowired
+    private AmqpTemplate amqpTemplate;
 
     public PageResult<Spu> querySpuByPage(Integer page, Integer rows, String key, Boolean saleable) {
         // 1 分页
@@ -123,6 +128,8 @@ public class GoodsService {
         spuDetail.setSpuId(spu.getId());
         spuDetailMapper.insert(spuDetail);
         saveSkuAndStock(spu);
+//        发送消息 给rabbit
+        sendMessage(spu.getId(),"insert");
 
     }
 
@@ -252,6 +259,7 @@ public class GoodsService {
         }
         //新增sku和stock---之前做过相同的业务，方法抽取出来调用即可.
         saveSkuAndStock(spu);
+        sendMessage(spu.getId(),"update");
     }
 //根据spuId 查询spu
     public Spu querySpuById(Long id) {
@@ -266,4 +274,15 @@ public class GoodsService {
         spu.setSkus(querySkuBySpuId(id));
         return spu;
     }
+
+
+//    rabbit
+private void sendMessage(Long id, String type){
+    // 发送消息
+    try {
+        this.amqpTemplate.convertAndSend("item." + type, id);
+    } catch (Exception e) {
+        log.error("{}商品消息发送异常，商品id：{}", type, id, e);
+    }
+}
 }

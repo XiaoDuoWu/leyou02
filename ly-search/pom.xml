@@ -12,6 +12,10 @@
     <groupId>com.leyou.service</groupId>
     <artifactId>ly-search</artifactId>
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
         <!--注册中心-->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

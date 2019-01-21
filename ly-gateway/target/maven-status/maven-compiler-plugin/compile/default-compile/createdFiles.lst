@@ -1,0 +1,3 @@
+com\leyou\gateway\config\CorsProperties.class
+com\leyou\gateway\LyGateway.class
+com\leyou\gateway\config\GlobalCorsConfig.class

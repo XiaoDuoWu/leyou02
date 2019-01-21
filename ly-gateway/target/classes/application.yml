@@ -13,6 +13,7 @@ zuul:
     item-service: /item/** # 将商品微服务映射到/item/**
     upload-service: /upload/** # 将上传微服务映射到/upload/**
     search-service: /search/** # 将上传微服务映射到/search/**
+    user-service: /user/** #用户中心
 hystrix:
   command:
     default:

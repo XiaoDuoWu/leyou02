@@ -65,7 +65,6 @@ public class PageService {
         map.put("categories", categories);
         map.put("skus", spu.getSkus());
         map.put("detail", spu.getSpuDetail());
-
         // 防止重复数据
         spu.setSkus(null);
         spu.setSpuDetail(null);
@@ -76,6 +75,7 @@ public class PageService {
     //    利用线程池 完成静态网页的写入
     public void syncCreateItemHtml(Long id) {
       es.submit(() -> createHtml(id));
+
     }
 //创建静态网页
     public void createHtml(Long id) {
@@ -99,6 +99,10 @@ public class PageService {
     }
 
 
-
-
+    public void deleteHtml(Long id) {
+        File file = new File(desctPath, id + ".html");
+        if (file.exists()) {
+            file.delete();
+        }
+    }
 }
