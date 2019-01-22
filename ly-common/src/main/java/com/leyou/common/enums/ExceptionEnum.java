@@ -24,7 +24,8 @@ public enum ExceptionEnum {
     GOODS_INSERT_ERROR(400, "商品新增失败"),
     GOODS_EDIT_ERROR(400, "商品编辑失败"),
     BAD_REQUEST(400,"参数异常" ),
-    DATA_TYPE_ERROR(400,"数据类型错误" );
+    DATA_TYPE_ERROR(400,"数据类型错误" ),
+    INVALID_UN_OR_PW(400,"账号&密码不存在或者数据错误" );
     //定义成员变量
     private String message;
     private int status;

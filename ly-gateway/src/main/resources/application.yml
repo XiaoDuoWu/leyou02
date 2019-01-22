@@ -10,10 +10,13 @@ eureka:
 zuul:
   prefix: /api # 添加路由前缀
   routes:
-    item-service: /item/** # 将商品微服务映射到/item/**
+    item-service: /item/**     # 将商品微服务映射到/item/**
     upload-service: /upload/** # 将上传微服务映射到/upload/**
     search-service: /search/** # 将上传微服务映射到/search/**
-    user-service: /user/** #用户中心
+    user-service: /user/**     #用户中心
+    auth-service: /auth/**     #授权中心
+  add-host-header: true
+  sensitive-headers:
 hystrix:
   command:
     default:
@@ -28,6 +31,17 @@ ribbon:
   MaxAutoRetriesNextServer: 0 # 切换服务重试次数
 
 ly:
+  filter:
+      allowPaths:
+        - /api/auth
+        - /api/search
+        - /api/user/register
+        - /api/user/check
+        - /api/user/code
+        - /api/item
+  jwt:
+    pubKeyPath: D:/heima/ssh/id_rsa.pub # 公钥地址
+    cookieName: LY_TOKEN # cookie的名称
   cors:
     allowedOrigins:
       - http://manage.leyou.com

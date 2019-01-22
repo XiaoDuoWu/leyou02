@@ -18,6 +18,7 @@ public class GlobalCorsConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.addAllowedOrigin("http://manage.leyou.com");
         config.addAllowedOrigin("http://www.leyou.com");
+        config.setAllowCredentials(true);
         //1) 允许的域,不要写*，否则cookie就无法使用了
         //props.getAllowedOrigins().forEach(origins->config.addAllowedOrigin(origins));
         props.getAllowedOrigins().forEach(config::addAllowedOrigin);

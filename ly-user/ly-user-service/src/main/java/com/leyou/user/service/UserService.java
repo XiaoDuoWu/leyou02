@@ -2,8 +2,8 @@ package com.leyou.user.service;
 
 import com.leyou.common.enums.ExceptionEnum;
 import com.leyou.common.exceptions.LyException;
+import com.leyou.pojo.User;
 import com.leyou.user.mapper.UserMapper;
-import com.leyou.user.pojo.User;
 import com.leyou.user.utils.CodecUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.amqp.core.AmqpTemplate;
@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -81,4 +82,23 @@ public class UserService {
         user.setSalt(salt);
         userMapper.insert(user);
     }
+
+    public User queryUserByUserNameAndPassword(String username, String password) {
+//        先查询用户名是否存在  不存在 不判断密码是否正确
+        User user = new User();
+        user.setUsername(username);
+        User user1 = userMapper.selectOne(user);
+        if (user1 == null) {
+            throw new LyException(ExceptionEnum.INVALID_UN_OR_PW);
+        }
+        String salt = user1.getSalt();
+//        判断密码是否正确
+        String pw = CodecUtils.md5Hex(password, salt);
+        if (!StringUtils.equals(pw, user1.getPassword())) {
+            throw new LyException(ExceptionEnum.INVALID_UN_OR_PW);
+        }
+//        账号密码都正确 正常返回user对象
+        return user1;
+    }
+
 }
