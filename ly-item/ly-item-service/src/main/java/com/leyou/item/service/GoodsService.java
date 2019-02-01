@@ -2,6 +2,7 @@ package com.leyou.item.service;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import com.leyou.common.dto.CartDTO;
 import com.leyou.common.enums.ExceptionEnum;
 import com.leyou.common.exceptions.LyException;
 import com.leyou.common.vo.PageResult;
@@ -14,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -285,4 +287,42 @@ private void sendMessage(Long id, String type){
         log.error("{}商品消息发送异常，商品id：{}", type, id, e);
     }
 }
+
+    public List<Sku> querySkuByIds(List<Long> ids) {
+        List<Sku> skus = skuMapper.selectByIdList(ids);
+        if (CollectionUtils.isEmpty(skus)) {
+            throw new LyException(ExceptionEnum.GOODS_NOT_FOUND);
+        }
+        // 填充库存
+        fillStock(ids, skus);
+        return skus;
+
+    }
+
+    private void fillStock(List<Long> ids, List<Sku> skus) {
+//         查询库存
+        List<Stock> stocks = stockMapper.selectByIdList(ids);
+        if (CollectionUtils.isEmpty(stocks)) {
+            throw new LyException(ExceptionEnum.GOODS_NOT_FOUND);
+        }
+//        把库存转为map  key是skuId  value是库存  转为map的原因是 map的key是skuId map的value是skuId的stock值
+        Map<Long, Integer> map = stocks.stream().collect(Collectors.toMap(s -> s.getSkuId(), s -> s.getStock()));
+//        保存在sku
+        for (Sku sku : skus) {
+//            把库存的数量保存在sku中
+            sku.setStock(map.get(sku.getId()));
+        }
+
+
+    }
+
+    @Transactional
+    public void decreaseStock(List<CartDTO> cartDTOS) {
+        for (CartDTO cartDTO : cartDTOS) {
+            int count = stockMapper.decreaseStock(cartDTO.getSkuId(), cartDTO.getNum());
+            if(count != 1){
+                throw new RuntimeException("库存不足");
+            }
+        }
+    }
 }

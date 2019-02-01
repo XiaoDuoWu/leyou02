@@ -4,8 +4,8 @@ import lombok.Getter;
 
 @Getter
 public enum ExceptionEnum {
-    PRICE_CANNOT_BE_NULL(400,"价格不能为空") , //有多个用逗号隔开，分号结束
-    CATEGORY_NOT_FOUND(404,"商品分类不存在") , //有多个用逗号隔开，分号结束
+    PRICE_CANNOT_BE_NULL(400, "价格不能为空"), //有多个用逗号隔开，分号结束
+    CATEGORY_NOT_FOUND(404, "商品分类不存在"), //有多个用逗号隔开，分号结束
     BRAND_NOT_FOUND(404, "品牌不存在"),
     BRAND_EDIT_ERROR(400, "品牌参数有误"),
     FILE_UPLOAD_ERROR(500, "文件上传异常"),
@@ -23,15 +23,21 @@ public enum ExceptionEnum {
     SPEC_PARAM_EDIT_ERROR(400, "规格组名编辑失败"),
     GOODS_INSERT_ERROR(400, "商品新增失败"),
     GOODS_EDIT_ERROR(400, "商品编辑失败"),
-    BAD_REQUEST(400,"参数异常" ),
-    DATA_TYPE_ERROR(400,"数据类型错误" ),
-    INVALID_UN_OR_PW(400,"账号&密码不存在或者数据错误" );
+    BAD_REQUEST(400, "参数异常"),
+    DATA_TYPE_ERROR(400, "数据类型错误"),
+    INVALID_UN_OR_PW(400, "账号&密码不存在或者数据错误"),
+    CART_NOT_FOUND(404, "找不到购物车的数据"),
+    TOKEN_ERROR(400, "token解析错误"),
+    ORDER_INSERT_ERROR(500,"订单创建失败" ),
+    ORDER_NOT_FOUND(404,"订单找不到" ),
+    ORDER_DETAIL_NOT_FOUND(404, "订单detail找不到"),
+    ORDER_STATUS_NOT_FOUND(404,"订单状态找不到" );
     //定义成员变量
     private String message;
     private int status;
     //构造函数
 
-    ExceptionEnum(int status, String message ) {
+    ExceptionEnum(int status, String message) {
         this.message = message;
         this.status = status;
     }

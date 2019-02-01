@@ -1,0 +1,24 @@
+server:
+  port: 8088
+spring:
+  rabbitmq:
+    host: 192.168.96.129
+    username: leyou
+    password: 1234
+    virtual-host: /leyou
+  application:
+    name: cart-service
+  redis:
+    host: 192.168.96.129
+eureka:
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:10086/eureka
+  instance:
+    prefer-ip-address: true
+    ip-address: 127.0.0.1
+
+ly:
+  jwt:
+    pubKeyPath: D:/heima/ssh/id_rsa.pub # 公钥地址
+    cookieName: LY_TOKEN # cookie的名称

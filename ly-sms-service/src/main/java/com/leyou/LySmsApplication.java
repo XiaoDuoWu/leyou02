@@ -9,3 +9,4 @@ public class LySmsApplication {
         SpringApplication.run(LySmsApplication.class, args);
     }
 }
+
