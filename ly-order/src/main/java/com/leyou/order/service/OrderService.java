@@ -9,6 +9,7 @@ import com.leyou.common.utils.IdWorker;
 import com.leyou.item.client.GoodsClient;
 import com.leyou.item.pojo.Sku;
 import com.leyou.order.enums.OrderStatusEnum;
+import com.leyou.order.enums.PayState;
 import com.leyou.order.filter.LoginInterceptor;
 import com.leyou.order.mapper.OrderDetailMapper;
 import com.leyou.order.mapper.OrderMapper;
@@ -16,6 +17,7 @@ import com.leyou.order.mapper.OrderStatusMapper;
 import com.leyou.order.pojo.Order;
 import com.leyou.order.pojo.OrderDetail;
 import com.leyou.order.pojo.OrderStatus;
+import com.leyou.order.utils.PayHelper;
 import com.leyou.pojo.AddressDTO;
 import com.leyou.userinterface.AddressClient;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +54,12 @@ public class OrderService {
     private GoodsClient goodsClient;
     @Autowired
     private AmqpTemplate amqpTemplate;
+
+    @Autowired
+    private  OrderStatusMapper orderStatusMapper;
+
+    @Autowired
+    private PayHelper payHelper;
 
     @Transactional
     public Long createOrder(OrderDTO orderDTO) {
@@ -191,6 +199,79 @@ public class OrderService {
         }
         order.setOrderStatus(orderStatus);
         return order;
+    }
+
+    public String createPayUrl(Long orderId) {
+
+        //通过orderId查询订单
+        Order order = queryOrderById(orderId);
+        //判断订单状态
+        OrderStatus orderStatus = order.getOrderStatus();
+        Integer status = orderStatus.getStatus();
+        if (!status.equals(OrderStatusEnum.INIT.value())) {
+            // 订单状态异常
+            throw new LyException(ExceptionEnum.BAD_REQUEST);
+        }
+        //获取订单中的支付金额,金额改为1分用于开发测试
+        Long actualPay = /*order.getActualPay()*/1L;
+        //获取订单中的商品标题作为描述
+        OrderDetail detail = order.getOrderDetails().get(0);
+        String desc = detail.getTitle();
+        return payHelper.createOrderUrl(orderId, actualPay, desc);
+
+    }
+
+    public PayState queryPayStatus(Long orderId) {
+        //1.先查订单的支付状态
+        Order order = queryOrderById(orderId);
+        Integer status = order.getOrderStatus().getStatus();
+        //1.1判断是否是已支付状态
+        if (!status.equals(OrderStatusEnum.INIT.value())){
+            //已支付就设置成支付成功
+            return PayState.SUCCESS;
+        }
+        //2.如果未支付，不一定是支付失败，去微信查询支付状态
+        PayState payState = payHelper.queryPayState(orderId);
+        return payState;
+    }
+
+    public void handleNotify(Map<String, String> result) {
+        //签名验证,并校验返回的订单金额是否与商户侧的订单金额一致
+        // 1.校验状态
+        payHelper.isSuccess(result);
+
+        // 2.校验签名
+        payHelper.isValidSign(result);
+        //3.校验金额
+        //3.1获取订单金额
+        String totalFeeStr = result.get("total_fee");
+        if (StringUtils.isBlank(totalFeeStr)){
+            log.error("【订单回调】订单参数有误,金额：{}",totalFeeStr);
+            throw new LyException(ExceptionEnum.BAD_REQUEST);
+        }
+        Long totalFee = Long.valueOf(totalFeeStr);
+        //3.2通过订单编号获取订单中的支付金额
+        String outTradeNoStr = result.get("out_trade_no");
+        Long orderId = Long.valueOf(outTradeNoStr);
+        Order order = queryOrderById(orderId);
+        Long actualPay = order.getActualPay();
+        //判断订单金额和支付金额是否一致
+        if (totalFee!=/*actualPay*/1){
+            //金额不符合
+                throw new LyException(ExceptionEnum.BAD_REQUEST);
+        }
+        //如果成功，修改订单状态
+        OrderStatus orderStatus = order.getOrderStatus();
+        orderStatus.setStatus(OrderStatusEnum.PAY_UP.value());
+        orderStatus.setOrderId(orderId);
+        //更新付款时间
+        orderStatus.setPaymentTime(new Date());
+        //写入数据库
+        int count = orderStatusMapper.updateByPrimaryKey(orderStatus);
+        if (count!=1){
+            throw new LyException(ExceptionEnum.BAD_REQUEST);
+        }
+        log.info("【订单回调】订单支付成功！订单编号：{}",orderId);
     }
 
 }

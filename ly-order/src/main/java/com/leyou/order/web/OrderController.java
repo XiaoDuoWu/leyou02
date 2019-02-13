@@ -21,9 +21,19 @@ public class OrderController {
         return ResponseEntity.ok(orderService.createOrder(orderDTO));
     }
 
-    @GetMapping("{id}")
+    @GetMapping("order/{id}")
     public ResponseEntity<Order> queryOrderById(@PathVariable("id") Long orderId){
         return ResponseEntity.ok(orderService.queryOrderById(orderId));
+    }
+
+    @GetMapping("order/url/{orderId}")
+    public ResponseEntity<String> createPayUrl(@PathVariable("orderId")Long orderId){
+        return ResponseEntity.ok(orderService.createPayUrl(orderId));
+    }
+
+    @GetMapping("order/state/{orderId}")
+    public ResponseEntity<Integer> queryPayStatus(@PathVariable("orderId")Long orderId){
+        return ResponseEntity.ok(orderService.queryPayStatus(orderId).getState());
     }
 
 }

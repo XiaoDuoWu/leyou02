@@ -30,6 +30,7 @@ public class LoginFilter extends ZuulFilter {
     public int filterOrder() {
         return 5;
     }
+    //判断是否执行过滤 true执行 false不执行
     @Override
     public boolean shouldFilter() {
         // 获取上下文
